@@ -20,8 +20,25 @@ class _LoginScreenState extends State<LoginScreen> {
   SMITrigger? _trigSuccess;
   SMITrigger? _trigFail;
 
-  //Control para mostrar u ocultar la contraseña
-  bool _obscure = true;
+  //2.1 Crear las variables para FocusNode
+  final _emailFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  //2.2 Activar el listeners
+  @override
+  void initState() {
+    super.initState();
+    _emailFocus.addListener(() {
+      if (_emailFocus.hasFocus) {
+        if (_isHandsUp != null) {
+          _isHandsUp!.change(false);
+        }
+      }
+    });
+    _passwordFocus.addListener(() {
+      _isHandsUp?.change(_passwordFocus.hasFocus);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     //Para obtener el tamaño de la pantalla
@@ -61,10 +78,11 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 10),
               //Campo de texto para email
               TextField(
+                focusNode: _emailFocus,
                 onChanged: (value) {
                   if (_isHandsUp != null) {
                     //No tapes los ojos al ver el email
-                    _isHandsUp?.change(false);
+                    // _isHandsUp?.change(false);
                   }
                   //Si isChecking no es nulO
                   if (_isChecking != null) {
@@ -86,10 +104,11 @@ class _LoginScreenState extends State<LoginScreen> {
               //Campo de texto para contraseña
               SizedBox(height: 10),
               TextField(
+                focusNode: _passwordFocus,
                 onChanged: (value) {
                   if (_isChecking != null) {
                     //No tapes los ojos al ver el email
-                    _isChecking?.change(false);
+                    // _isChecking?.change(false);
                   }
                   //Si isChecking no es nulO
                   if (_isHandsUp != null) {
@@ -119,48 +138,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              //para separar espacios
-              SizedBox(height: 10),
-              TextField(
-                //Para mostrar el tipo de teclado
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  prefixIcon: const Icon(Icons.email),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              SizedBox(height: 10),
-              //Campo para contraseña
-              TextField(
-                //Para mostrar el tipo de teclado
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  hintText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    //Operador Ternario
-                    icon: Icon(
-                      _obscure ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () {
-                      //Refrescar
-                      setState(() {
-                        _obscure = !_obscure;
-                      });
-                    },
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    //2.3 Liberar los focusNode
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    super.dispose();
   }
 }
