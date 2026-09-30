@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
 
+import 'dart:async'; //3.1 Importar el timer
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -20,6 +22,12 @@ class _LoginScreenState extends State<LoginScreen> {
   SMITrigger? _trigSuccess;
   SMITrigger? _trigFail;
 
+  //3.2 Variable del recorrido de la mirada
+  SMINumber? _numLook;
+
+  //3.3 Timer para detener la animacion de mirar
+  Timer? _typingDebounce;
+
   //2.1 Crear las variables para FocusNode
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
@@ -31,6 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (_emailFocus.hasFocus) {
         if (_isHandsUp != null) {
           _isHandsUp!.change(false);
+          _numLook?.value = 50.0;
         }
       }
     });
@@ -71,6 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     _isHandsUp = _controller?.findSMI('isHandsUp');
                     _trigSuccess = _controller?.findSMI('trigSuccess');
                     _trigFail = _controller?.findSMI('trigFail');
+                    //3.4 Vincular la variable de mirada
+                    _numLook = _controller?.findSMI('numLook');
                   },
                 ),
               ),
@@ -88,6 +99,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   if (_isChecking != null) {
                     //Activar el modo chismoso
                     _isChecking!.change(true);
+                    final look = (value.length / 80 * 100.0).clamp(0.0, 100.0);
+                    _numLook?.value = look;
+
+                    _typingDebounce?.cancel();
+                    _typingDebounce = Timer(Duration(seconds: 3), () {
+                      if (!mounted) return;
+                      _isChecking?.change(false);
+                    });
                   }
                 },
                 //para mostrar el tipo de teclado
@@ -150,6 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
     //2.3 Liberar los focusNode
     _emailFocus.dispose();
     _passwordFocus.dispose();
+    _typingDebounce?.cancel();
     super.dispose();
   }
 }
