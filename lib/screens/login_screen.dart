@@ -31,6 +31,59 @@ class _LoginScreenState extends State<LoginScreen> {
   //2.1 Crear las variables para FocusNode
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
+
+  //Controles que manipulan lo que el usuario escribe
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+
+  //Errores para mostrarlo en la UI
+  String? _emailError;
+  String? _passError;
+
+  //Validadores
+  bool isValidateEmail(String email) {
+    final re = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
+    return re.hasMatch(email);
+  }
+
+  bool isValidPassword(String pass) {
+    final re = RegExp(
+      r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$',
+    );
+    return re.hasMatch(pass);
+  }
+
+  //Dar Accion al boton
+  void _onLogin() {
+    //De lo que escribio el usuario quitar espacios en blanco
+    final email = _emailCtrl.text = _emailCtrl.text.trim();
+    final password = _passCtrl.text;
+
+    //4.6 Evaluiar los errores
+    final eError = isValidateEmail(email) ? null : 'Invalid email';
+    final pError = isValidPassword(password) ? null : 'Invalid password';
+
+    //4.7 Avisar que hubo cambios
+    setState(() {
+      _emailError = eError;
+      _passError = pError;
+    });
+
+    //4.8 Cerrar el teclado y bajar las manos del oso
+    FocusScope.of(context).unfocus();
+    _typingDebounce?.cancel();
+    _isChecking?.change(false);
+    _isHandsUp?.change(false);
+    _numLook?.value = 50.0;
+
+    //4.9 Activar triggers
+    if (eError == null && pError == null) {
+      _trigSuccess?.fire();
+    } else {
+      _trigFail?.fire();
+    }
+  }
+
   //2.2 Activar el listeners
   @override
   void initState() {
@@ -89,6 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
               SizedBox(height: 10),
               //Campo de texto para email
               TextField(
+                //4.10 Enlazar controladores de texto
+                controller: _emailCtrl,
                 focusNode: _emailFocus,
                 onChanged: (value) {
                   if (_isHandsUp != null) {
@@ -112,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 //para mostrar el tipo de teclado
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
+                  errorText: _emailError,
                   hintText: 'Email',
                   prefixIcon: const Icon(Icons.email),
                   border: OutlineInputBorder(
@@ -123,6 +179,8 @@ class _LoginScreenState extends State<LoginScreen> {
               //Campo de texto para contraseña
               SizedBox(height: 10),
               TextField(
+                controller: _passCtrl,
+
                 focusNode: _passwordFocus,
                 onChanged: (value) {
                   if (_isChecking != null) {
@@ -138,7 +196,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscureText: _obscure,
                 //para mostrar el tipo de teclado
                 decoration: InputDecoration(
-                  hintText: 'Contraseña',
+                  errorText: _passError,
+                  hintText: 'Password',
                   prefixIcon: const Icon(Icons.lock),
                   suffixIcon: IconButton(
                     icon: Icon(
@@ -157,6 +216,49 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
+              SizedBox(height: 10),
+              //Texto olvide mi contraseña
+              SizedBox(
+                width: size.width,
+                child: const Text(
+                  'Forgot your password?',
+                  textAlign: TextAlign.right,
+                  style: TextStyle(decoration: TextDecoration.underline),
+                ),
+              ),
+              const SizedBox(height: 10),
+              //Boton de login
+              MaterialButton(
+                minWidth: size.width,
+                height: 50,
+                color: Colors.pinkAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                onPressed: _onLogin,
+                child: Text('Login', style: TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: size.width,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('Dont have an account?'),
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -167,6 +269,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     //2.3 Liberar los focusNode
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
     _typingDebounce?.cancel();
