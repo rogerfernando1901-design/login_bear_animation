@@ -13,6 +13,25 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   //Variable para el control de la visibilidad de la contraseña
   bool _obscure = true;
+  bool _rememberMe = false;
+  bool _isLoginAnimating = false;
+  bool _loginResultStarted = false;
+
+  void _onBearStateChange(String machineName, String stateName) {
+    final state = stateName.toLowerCase();
+    // Ignorar el estado de la mirada; solo interesa el estado principal.
+    if (state.startsWith('look')) return;
+    if (!mounted || !_isLoginAnimating) return;
+
+    if (state.startsWith('success') || state.startsWith('fail')) {
+      _loginResultStarted = true;
+    } else if (state.startsWith('idle') && _loginResultStarted) {
+      setState(() {
+        _isLoginAnimating = false;
+        _loginResultStarted = false;
+      });
+    }
+  }
 
   //1.1 crear el cerebro de la animacion
   StateMachineController? _controller;
@@ -55,6 +74,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   //Dar Accion al boton
   void _onLogin() {
+    if (_isLoginAnimating || _controller == null) return;
+
     //De lo que escribio el usuario quitar espacios en blanco
     final email = _emailCtrl.text = _emailCtrl.text.trim();
     final password = _passCtrl.text;
@@ -67,6 +88,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() {
       _emailError = eError;
       _passError = pError;
+      _isLoginAnimating = true;
+      _loginResultStarted = false;
     });
 
     //4.8 Cerrar el teclado y bajar las manos del oso
@@ -122,6 +145,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     _controller = StateMachineController.fromArtboard(
                       artboard,
                       'Login Machine',
+                      onStateChange: _onBearStateChange,
                     );
 
                     //1.3 Verificar que inicio bien
@@ -217,6 +241,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               SizedBox(height: 10),
+              CheckboxListTile(
+                dense: true,
+                visualDensity: const VisualDensity(vertical: -2),
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading,
+                title: const Text(
+                  'Remember me',
+                  style: TextStyle(fontSize: 16),
+                ),
+                value: _rememberMe,
+                onChanged: (value) {
+                  setState(() {
+                    _rememberMe = value ?? false;
+                  });
+                },
+              ),
               //Texto olvide mi contraseña
               SizedBox(
                 width: size.width,
@@ -232,10 +272,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 minWidth: size.width,
                 height: 50,
                 color: Colors.pinkAccent,
+                disabledColor: Colors.pinkAccent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                onPressed: _onLogin,
+                onPressed: _isLoginAnimating ? null : _onLogin,
                 child: Text('Login', style: TextStyle(color: Colors.white)),
               ),
               const SizedBox(height: 10),
